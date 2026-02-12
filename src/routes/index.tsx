@@ -48,21 +48,15 @@ function useCode() {
 	const [code, setCodeRaw] = useState(search.code ?? '');
 
 	useEffect(() => {
-		setCodeRaw(search.code ?? '');
-	}, [search.code]);
-
-	const setCode = (value: string) => {
-		setCodeRaw(value);
-		navigate({
+		void navigate({
 			search: (prev) => ({
-				...prev,
-				code: value || undefined,
+				...(prev.code === code ? prev : { ...prev, code }),
 			}),
 			replace: true,
 		});
-	};
+	}, [code, navigate]);
 
-	return [code, setCode] as const;
+	return [code, setCodeRaw] as const;
 }
 
 function RouteComponent() {

@@ -1,4 +1,5 @@
 import { valueObject } from '@/lib/lang';
+
 import type { EagerInput, Input, InputParameters } from '@/types';
 
 export async function synthetic(parameters: InputParameters): Promise<Input> {

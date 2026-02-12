@@ -1,4 +1,5 @@
 import { valueObject } from '@/lib/lang';
+
 import type { EagerInput, Frequency, Input, InputParameters, Instrument } from '@/types';
 
 export async function binance(parameters: InputParameters, instrument: Instrument): Promise<Input> {

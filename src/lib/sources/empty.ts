@@ -1,4 +1,5 @@
 import { valueObject } from '@/lib/lang';
+
 import type { Input, InputParameters } from '@/types';
 
 export function empty({ input, limit }: InputParameters): Input {
