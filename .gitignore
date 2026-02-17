@@ -1,4 +1,7 @@
 .tanstack
 .wrangler
+.env*
+!.env.example
+_build
 dist
 node_modules

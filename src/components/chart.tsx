@@ -35,7 +35,7 @@ export function Chart({ input, output, backtest }: ChartProps) {
 	const data = model.data;
 
 	return (
-		<div ref={ref} className="h-[calc(100vh-235px)] min-h-0 chart-uplot">
+		<div ref={ref} className="h-[calc(100vh-320px)] min-h-0 chart-uplot">
 			<style>{`
         .u-select {
           background-color: color-mix(in hsl, var(--ring), transparent 90%);

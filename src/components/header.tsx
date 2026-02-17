@@ -1,6 +1,16 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useSearch } from '@tanstack/react-router';
+import { useEffect } from 'react';
+import {
+	CheckIcon,
+	GitForkIcon,
+	HeartIcon,
+	Loader2Icon,
+	PlusIcon,
+	SaveIcon,
+	TrashIcon,
+} from 'lucide-react';
 
+import { Explore } from '@/components/explore';
+import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { NumberInput } from '@/components/ui/number-input';
 import {
@@ -10,25 +20,22 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
-import { algorithms } from '@/data/algorithms';
 import { inputs } from '@/data/inputs';
-import { getDocstrings } from '@/lib/lang';
+import { useAppActions } from '@/hooks/use-app-actions';
+import { useAppState } from '@/hooks/use-app-state';
 import { Frequency } from '@/types';
 
-type Props<T> = {
-	value: T;
-	onChange: (value: T) => void;
-};
-
-function FrequencySelect({ value, onChange }: Props<Frequency>) {
-	const frequencyOptions = Object.values(Frequency).map((value) => ({
-		value,
-		label: value,
+function FrequencySelect() {
+	const { parameters } = useAppState();
+	const { setFrequency } = useAppActions();
+	const frequencyOptions = Object.values(Frequency).map((entry) => ({
+		value: entry,
+		label: entry,
 	}));
 
 	return (
-		<Select value={value} onValueChange={onChange}>
-			<SelectTrigger aria-label="Frequency">
+		<Select value={parameters.frequency} onValueChange={setFrequency}>
+			<SelectTrigger aria-label="Frequency" title="Frequency">
 				<SelectValue placeholder="Frequency" />
 			</SelectTrigger>
 			<SelectContent>
@@ -42,30 +49,9 @@ function FrequencySelect({ value, onChange }: Props<Frequency>) {
 	);
 }
 
-function AlgorithmCombobox({
-	value,
-	onChange,
-	placeholder,
-}: Props<string> & { placeholder?: string }) {
-	const options = algorithms.map((algo) => ({
-		value: algo.id,
-		label: algo.name,
-	}));
-
-	return (
-		<Combobox
-			options={options}
-			value={value}
-			onValueChange={onChange}
-			ariaLabel="Algorithm"
-			placeholder={placeholder ?? 'Algorithm'}
-			searchPlaceholder="Search algorithms..."
-			showCheck={false}
-		/>
-	);
-}
-
-function InputCombobox({ value, onChange }: Props<string>) {
+function InputCombobox() {
+	const { parameters } = useAppState();
+	const { setInput } = useAppActions();
 	const options = inputs.map((input) => ({
 		value: input,
 		label: input,
@@ -74,9 +60,10 @@ function InputCombobox({ value, onChange }: Props<string>) {
 	return (
 		<Combobox
 			options={options}
-			value={value}
-			onValueChange={onChange}
+			value={parameters.input}
+			onValueChange={setInput}
 			ariaLabel="Input instrument"
+			title="Input instrument"
 			placeholder="Input"
 			searchPlaceholder="Search instruments..."
 			showCheck={false}
@@ -84,113 +71,237 @@ function InputCombobox({ value, onChange }: Props<string>) {
 	);
 }
 
-function SamplesInput({ value, onChange }: Props<number>) {
-	const [draft, setDraft] = useState(String(value));
-
-	useEffect(() => {
-		setDraft(String(value));
-	}, [value]);
-
-	const clamp = (raw: number) => Math.min(1000, Math.max(5, raw));
+function SamplesInput() {
+	const { parameters } = useAppState();
+	const { setLimit } = useAppActions();
 
 	return (
 		<NumberInput
 			min={5}
 			max={1000}
-			value={draft}
+			value={parameters.limit}
 			aria-label="Samples"
+			title="Samples"
 			label="Samples"
-			onChange={(event) => {
-				const nextDraft = event.currentTarget.value;
-				setDraft(nextDraft);
-				const raw = Number(nextDraft);
-				if (Number.isFinite(raw)) {
-					onChange(clamp(raw));
-				}
-			}}
-			onBlur={() => {
-				const raw = Number(draft);
-				const next = Number.isFinite(raw) ? clamp(raw) : 5;
-				setDraft(String(next));
-				onChange(next);
-			}}
+			onValueChange={setLimit}
+			fallbackValue={5}
 			className="tabular-nums -z-50 w-full"
 		/>
 	);
 }
 
-function CostsInput({ value, onChange }: Props<number>) {
-	const [draft, setDraft] = useState(String(value));
-
-	useEffect(() => {
-		setDraft(String(value));
-	}, [value]);
-
-	const clamp = (raw: number) => Math.min(0.1, Math.max(0, raw));
+function CostsInput() {
+	const { parameters } = useAppState();
+	const { setCosts } = useAppActions();
 
 	return (
 		<NumberInput
 			min={0}
 			max={0.1}
 			step={0.0001}
-			value={draft}
+			value={parameters.costs}
 			aria-label="Costs"
+			title="Costs"
 			label="Costs"
-			onChange={(event) => {
-				const nextDraft = event.currentTarget.value;
-				setDraft(nextDraft);
-				const raw = Number(nextDraft);
-				if (Number.isFinite(raw)) {
-					onChange(clamp(raw));
-				}
-			}}
-			onBlur={() => {
-				const raw = Number(draft);
-				const next = Number.isFinite(raw) ? clamp(raw) : 0;
-				setDraft(String(next));
-				onChange(next);
-			}}
+			onValueChange={setCosts}
+			fallbackValue={0}
 			className="tabular-nums -z-50 w-full"
 		/>
 	);
 }
 
-export function Header() {
-	const search = useSearch({ from: '/' });
-	const navigate = useNavigate({ from: '/' });
-	const onChange = (key: string) => (value: unknown) =>
-		void navigate({ search: (prev) => ({ ...prev, [key]: value }) });
-	const onAlgorithmChange = (value: string) => {
-		const selected = algorithms.find((algo) => algo.id === value);
-		if (!selected) {
-			void navigate({
-				search: (prev) => ({
-					...prev,
-					code: undefined,
-				}),
-			});
+function SaveButton() {
+	const { parameters, isUnchanged } = useAppState();
+	const { save, isSaving } = useAppActions();
+
+	return (
+		<Button
+			variant="ghost"
+			className="justify-start md:justify-center px-2 md:size-8 md:px-0"
+			disabled={isSaving || !parameters.code}
+			onClick={() => {
+				void save();
+			}}
+			aria-label={isSaving ? 'Saving...' : isUnchanged ? 'Saved' : 'Save'}
+			title={isSaving ? 'Saving...' : isUnchanged ? 'Saved' : 'Save'}
+		>
+			{isSaving ? (
+				<Loader2Icon className="animate-spin" />
+			) : isUnchanged ? (
+				<CheckIcon />
+			) : (
+				<SaveIcon />
+			)}
+		</Button>
+	);
+}
+
+function NewButton() {
+	const { newAlgorithm } = useAppActions();
+
+	return (
+		<Button
+			variant="ghost"
+			className="justify-start md:justify-center px-2 md:size-8 md:px-0"
+			onClick={newAlgorithm}
+			aria-label="New algorithm"
+			title="New algorithm"
+		>
+			<PlusIcon />
+		</Button>
+	);
+}
+
+function ForkButton() {
+	const { fork, isSaving } = useAppActions();
+
+	return (
+		<Button
+			variant="ghost"
+			className="justify-start md:justify-center px-2 md:size-8 md:px-0"
+			disabled={isSaving}
+			onClick={() => {
+				void fork();
+			}}
+			aria-label={isSaving ? 'Forking...' : 'Fork algorithm'}
+			title={isSaving ? 'Forking...' : 'Fork algorithm'}
+		>
+			{isSaving ? <Loader2Icon className="animate-spin" /> : <GitForkIcon />}
+		</Button>
+	);
+}
+
+function VisibilitySelect() {
+	const { algorithm } = useAppState();
+	const { setVisibility, isSettingVisibility, isDeleting } = useAppActions();
+
+	if (!algorithm) return null;
+
+	return (
+		<Select
+			value={algorithm.visibility}
+			onValueChange={(next) => setVisibility(next as 'public' | 'unlisted' | 'private')}
+			disabled={isSettingVisibility || isDeleting}
+		>
+			<SelectTrigger
+				className="md:w-fit"
+				aria-label="Algorithm visibility"
+				title="Algorithm visibility"
+			>
+				<SelectValue />
+				{isSettingVisibility ? <Loader2Icon className="ml-2 size-3 animate-spin" /> : null}
+			</SelectTrigger>
+			<SelectContent>
+				<SelectItem value="public">Public</SelectItem>
+				<SelectItem value="unlisted">Unlisted</SelectItem>
+				<SelectItem value="private">Private</SelectItem>
+			</SelectContent>
+		</Select>
+	);
+}
+
+function DeleteButton() {
+	const { remove, isDeleting, isSettingVisibility } = useAppActions();
+
+	return (
+		<Button
+			variant="ghost"
+			className="justify-start md:justify-center px-2 md:size-8 md:px-0"
+			disabled={isDeleting || isSettingVisibility}
+			onClick={remove}
+			aria-label="Delete algorithm"
+			title="Delete algorithm"
+		>
+			{isDeleting ? <Loader2Icon className="animate-spin" /> : <TrashIcon />}
+		</Button>
+	);
+}
+
+function LikeButton() {
+	const { algorithm, canLike, liked, likeCount } = useAppState();
+	const { toggleLike, isLiking } = useAppActions();
+
+	if (!algorithm) return null;
+
+	return (
+		<Button
+			variant="ghost"
+			className="justify-start md:justify-center px-2 md:px-2"
+			disabled={!canLike || isLiking}
+			onClick={() => {
+				void toggleLike();
+			}}
+			aria-label={liked ? 'Unlike algorithm' : 'Like algorithm'}
+			title={liked ? 'Unlike algorithm' : 'Like algorithm'}
+		>
+			{isLiking ? (
+				<Loader2Icon className="animate-spin" />
+			) : (
+				<HeartIcon className={liked ? 'fill-current' : undefined} />
+			)}
+			<span className="pl-1 tabular-nums">{likeCount}</span>
+		</Button>
+	);
+}
+
+function HeaderParameters() {
+	return (
+		<>
+			<FrequencySelect />
+			<Explore />
+			<InputCombobox />
+			<SamplesInput />
+			<CostsInput />
+		</>
+	);
+}
+
+function HeaderActions() {
+	const { algorithm, isOwner, isUnchanged, error } = useAppState();
+	const { save, isSaving, isDeleting, isSettingVisibility } = useAppActions();
+	const showFork = algorithm != null && !isOwner;
+	const showSave = algorithm == null || isOwner;
+	const showOwnerActions = algorithm != null && isOwner;
+	const shouldAutoSave =
+		algorithm != null &&
+		isOwner &&
+		!isUnchanged &&
+		!error &&
+		!isSaving &&
+		!isDeleting &&
+		!isSettingVisibility;
+
+	useEffect(() => {
+		if (!shouldAutoSave) {
 			return;
 		}
-		void navigate({
-			search: (prev) => ({
-				...prev,
-				code: selected.code,
-			}),
-		});
-	};
-	const selectedAlgorithm = algorithms.find((algo) => algo.code === search.code);
-	const docstrings = getDocstrings(search.code ?? '');
+		const timer = setTimeout(() => {
+			void save();
+		}, 650);
+		return () => clearTimeout(timer);
+	}, [save, shouldAutoSave]);
+
 	return (
-		<header className="grid md:grid-cols-[64px_minmax(0,1fr)_minmax(0,1fr)_132px_132px]">
-			<FrequencySelect value={search.frequency} onChange={onChange('frequency')} />
-			<AlgorithmCombobox
-				value={selectedAlgorithm?.id ?? ''}
-				onChange={onAlgorithmChange}
-				placeholder={docstrings.name}
-			/>
-			<InputCombobox value={search.input} onChange={onChange('input')} />
-			<SamplesInput value={search.limit} onChange={onChange('limit')} />
-			<CostsInput value={search.costs} onChange={onChange('costs')} />
+		<div className="flex items-center justify-end gap-1 min-w-0 overflow-hidden">
+			{showOwnerActions ? (
+				<div className="flex items-center gap-1 shrink-0">
+					<VisibilitySelect />
+					<DeleteButton />
+				</div>
+			) : null}
+			{showFork ? <ForkButton /> : null}
+			{showSave ? <SaveButton /> : null}
+			<NewButton />
+			<LikeButton />
+		</div>
+	);
+}
+
+export function Header() {
+	return (
+		<header className="grid md:grid-cols-[56px_minmax(0,1fr)_minmax(0,1fr)_128px_128px_minmax(0,1fr)]">
+			<HeaderParameters />
+			<HeaderActions />
 		</header>
 	);
 }

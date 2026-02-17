@@ -57,7 +57,7 @@ function SelectContent({
 			<SelectPrimitive.Content
 				data-slot="select-content"
 				className={cn(
-					'bg-popover text-popover-foreground relative -translate-x-1 z-50 max-h-(--radix-select-content-available-height) w-[--radix-select-trigger-width] overflow-x-hidden overflow-y-auto rounded-none border-0 shadow-none',
+					'bg-popover text-popover-foreground relative -translate-x-3 z-50 max-h-(--radix-select-content-available-height) w-[--radix-select-trigger-width] overflow-x-hidden overflow-y-auto rounded-none border-0 shadow-none',
 					className,
 				)}
 				position={position}

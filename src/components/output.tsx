@@ -1,22 +1,24 @@
 import { Chart } from '@/components/chart';
 import { Metrics } from '@/components/metrics';
+import { useAppState } from '@/hooks/use-app-state';
+import { annualiseReturn, annualiseSharpe } from '@/utils/frequency';
 
-import type { BacktestOutput } from '@/lib/backtest';
-import type { Input, Value } from '@/types';
+export function Output() {
+	const { parameters, input, output, backtest, error } = useAppState();
 
-type OutputProps = {
-	input?: Input;
-	output: Value;
-	backtest?: BacktestOutput;
-	error?: string;
-};
+	const sampleCount = Math.max(0, (backtest?.equity.length ?? 0) - 1);
+	const annualisedReturn = annualiseReturn(
+		backtest?.metrics.return,
+		sampleCount,
+		parameters.frequency,
+	);
+	const annualisedSharpe = annualiseSharpe(backtest?.metrics.sharpe, parameters.frequency);
 
-export function Output({ input, output, backtest, error }: OutputProps) {
 	const metrics = [
 		{
 			key: 'return',
-			label: 'Return',
-			value: backtest?.metrics.return ?? null,
+			label: 'Annual Return',
+			value: annualisedReturn,
 			format: 'percent' as const,
 			polarity: 'signed' as const,
 		},
@@ -37,7 +39,7 @@ export function Output({ input, output, backtest, error }: OutputProps) {
 		{
 			key: 'sharpe',
 			label: 'Sharpe',
-			value: backtest?.metrics.sharpe ?? null,
+			value: annualisedSharpe,
 			format: 'number' as const,
 			polarity: 'signed' as const,
 		},
@@ -47,7 +49,11 @@ export function Output({ input, output, backtest, error }: OutputProps) {
 			{error && <OutputError error={error} />}
 			<Metrics metrics={metrics} />
 			<div className="min-h-0 flex-1">
-				<Chart input={input} output={output} backtest={backtest} />
+				<Chart
+					{...(input !== undefined ? { input } : {})}
+					{...(output !== undefined ? { output } : {})}
+					{...(backtest !== undefined ? { backtest } : {})}
+				/>
 			</div>
 		</section>
 	);

@@ -311,6 +311,43 @@ export const BUILTINS: Builtins = {
 		['x'],
 		categories.time_series,
 	),
+	step_delta: func(
+		2,
+		([x, threshold]) =>
+			(() => {
+				const cache = new Map<number, number>();
+				let lastT: number | null = null;
+				let lastValue: number | null = null;
+
+				return (t: number): number => {
+					const cached = cache.get(t);
+					if (cached !== undefined) {
+						return cached;
+					}
+
+					const curr = x(t);
+					const th = Math.abs(threshold(t));
+
+					const prev =
+						lastT !== null && lastValue !== null && t === lastT - 1 ? lastValue : x(t + 1);
+
+					const next =
+						!Number.isFinite(prev) || !Number.isFinite(th)
+							? curr
+							: Math.abs(curr - prev) > th
+								? curr
+								: prev;
+
+					cache.set(t, next);
+					lastT = t;
+					lastValue = next;
+					return next;
+				};
+			})(),
+		'hold previous stepped value unless |x - prev| exceeds threshold',
+		['x', 'threshold'],
+		categories.time_series,
+	),
 };
 
 export function getBuiltinDocs(): BuiltinDoc[] {

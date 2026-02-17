@@ -5,14 +5,13 @@ import { useLocalstorageState } from 'rooks';
 
 import { Help } from '@/components/help';
 import { Toggle } from '@/components/ui/toggle';
+import { useAppActions } from '@/hooks/use-app-actions';
+import { useAppState } from '@/hooks/use-app-state';
 import { extension, theme } from '@/utils/code';
 
-type CodeProps = {
-	value: string;
-	onChange: (value: string) => void;
-};
-
-export function Code({ value, onChange }: CodeProps) {
+export function Code() {
+	const { parameters } = useAppState();
+	const { setCode } = useAppActions();
 	const [vimEnabled, setVimEnabled] = useLocalstorageState('vim', false);
 	const [helpOpen, setHelpOpen] = useLocalstorageState('help', false);
 	const extensions = [
@@ -24,19 +23,17 @@ export function Code({ value, onChange }: CodeProps) {
 
 	return (
 		<section className="h-full flex flex-col">
-			<style>
-				{`
-  .cm-editor ::selection: {
-  filter: invert();
-  },
-		`}
-			</style>
-			<CodeMirror className="grow" value={value} extensions={extensions} onChange={onChange} />
-			<footer className="flex justify-end gap-2 p-1">
+			<CodeMirror
+				className="grow"
+				value={parameters.code}
+				extensions={extensions}
+				onChange={setCode}
+			/>
+			<footer className="flex justify-end gap-1 p-1">
 				<Toggle
 					variant="ghost"
 					size="sm"
-					className="h-6 text-muted-foreground text-xs border-none data-[state=on]:bg-transparent"
+					className="h-6 text-muted-foreground text-xs p-1 border-none data-[state=on]:bg-transparent"
 					pressed={helpOpen}
 					onPressedChange={setHelpOpen}
 				>
@@ -45,7 +42,7 @@ export function Code({ value, onChange }: CodeProps) {
 				<Toggle
 					variant="ghost"
 					size="sm"
-					className="h-6 text-xs border-none text-muted-foreground data-[state=on]:bg-transparent"
+					className="h-6 text-xs border-none p-1 text-muted-foreground data-[state=on]:bg-transparent"
 					pressed={vimEnabled}
 					onPressedChange={setVimEnabled}
 				>

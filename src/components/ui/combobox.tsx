@@ -1,5 +1,5 @@
-import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react';
 import * as React from 'react';
+import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -55,6 +55,8 @@ export type ComboboxRootProps = {
 	disabled?: boolean;
 	open?: boolean;
 	onOpenChange?: (open: boolean) => void;
+	searchValue?: string;
+	onSearchValueChange?: (value: string) => void;
 	children?: React.ReactNode;
 };
 
@@ -70,6 +72,8 @@ function ComboboxRoot({
 	disabled = false,
 	open: openProp,
 	onOpenChange,
+	searchValue,
+	onSearchValueChange,
 	children,
 }: ComboboxRootProps) {
 	const [internalValue, setInternalValue] = React.useState(defaultValue);
@@ -120,6 +124,7 @@ type ComboboxTriggerProps = {
 	className?: string;
 	ariaLabel?: string;
 	showChevron?: boolean;
+	title?: string;
 	children?: React.ReactNode;
 	asChild?: boolean;
 };
@@ -128,6 +133,7 @@ function ComboboxTrigger({
 	className,
 	ariaLabel,
 	showChevron = true,
+	title,
 	children,
 	asChild = false,
 }: ComboboxTriggerProps) {
@@ -149,6 +155,7 @@ function ComboboxTrigger({
 					'w-full justify-between rounded-none border-0 border-b border-transparent hover:bg-accent/30 aria-expanded:bg-transparent focus-visible:border-b focus-visible:border-border focus-visible:outline-none focus-visible:ring-0',
 					className,
 				)}
+				title={title}
 			>
 				{children ?? <ComboboxValue />}
 				{showChevron ? <ChevronsUpDownIcon className="ml-2 size-3 shrink-0 opacity-60" /> : null}
@@ -175,15 +182,21 @@ type ComboboxContentProps = {
 	sideOffset?: React.ComponentProps<typeof PopoverContent>['sideOffset'];
 	searchPlaceholder?: string;
 	emptyMessage?: string;
+	header?: React.ReactNode;
+	searchValue?: string;
+	onSearchValueChange?: (value: string) => void;
 	children?: React.ReactNode;
 };
 
 function ComboboxContent({
 	className,
 	align = 'start',
-	sideOffset = 4,
+	sideOffset = 0,
 	searchPlaceholder,
 	emptyMessage,
+	header,
+	searchValue,
+	onSearchValueChange,
 	children,
 }: ComboboxContentProps) {
 	const {
@@ -200,7 +213,12 @@ function ComboboxContent({
 			className={cn('border-0 p-0', className)}
 		>
 			<Command>
-				<CommandInput placeholder={searchPlaceholder ?? defaultSearchPlaceholder} />
+				<CommandInput
+					placeholder={searchPlaceholder ?? defaultSearchPlaceholder}
+					value={searchValue}
+					onValueChange={onSearchValueChange}
+				/>
+				{header}
 				<CommandList>
 					<CommandEmpty>{emptyMessage ?? defaultEmptyMessage}</CommandEmpty>
 					<CommandGroup>
@@ -251,9 +269,12 @@ function ComboboxItem({ value, disabled, children, className, onSelect }: Combob
 
 export type ComboboxProps = ComboboxRootProps & {
 	ariaLabel?: string;
+	title?: string;
 	className?: string;
 	buttonClassName?: string;
 	contentClassName?: string;
+	contentHeader?: React.ReactNode;
+	children?: React.ReactNode;
 };
 
 function Combobox({
@@ -267,11 +288,16 @@ function Combobox({
 	disabled,
 	open,
 	onOpenChange,
+	searchValue,
+	onSearchValueChange,
 	showCheck,
 	ariaLabel,
+	title,
 	className,
 	buttonClassName,
 	contentClassName,
+	contentHeader,
+	children,
 }: ComboboxProps) {
 	return (
 		<ComboboxRoot
@@ -286,13 +312,18 @@ function Combobox({
 			disabled={disabled}
 			open={open}
 			onOpenChange={onOpenChange}
+			searchValue={searchValue}
+			onSearchValueChange={onSearchValueChange}
 		>
-			<ComboboxTrigger className={buttonClassName} ariaLabel={ariaLabel} />
+			<ComboboxTrigger className={buttonClassName} ariaLabel={ariaLabel} title={title} />
 			<ComboboxContent
 				className={cn(className, contentClassName)}
 				searchPlaceholder={searchPlaceholder}
 				emptyMessage={emptyMessage}
-			/>
+				header={contentHeader}
+			>
+				{children}
+			</ComboboxContent>
 		</ComboboxRoot>
 	);
 }
